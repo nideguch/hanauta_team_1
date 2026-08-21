@@ -1,5 +1,5 @@
-// プロフィール画面。ログイン中ユーザーの表示名を編集して保存する。
-// users テーブルの name を更新する（初回登録は profile_setup_screen.dart）。
+// プロフィール画面。ログイン中ユーザーの表示名とアイコンを編集して保存する。
+// users テーブルの name / icon_url を更新する（初回登録は profile_setup_screen.dart）。
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/analytics.dart';
 import '../../core/navigation.dart';
 import '../../core/supabase_client.dart';
+import 'avatar_presets.dart';
 import 'profile_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -19,6 +20,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  String? _selectedIcon;
   bool _isSaving = false;
   // 取得済みの名前をフォームへ流し込むのは最初の1回だけ。
   // 再取得のたびに上書きすると、編集中の入力が消えてしまうため。
@@ -43,6 +45,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       await updateProfileName(
         userId: user.id,
         name: _nameController.text.trim(),
+        iconUrl: _selectedIcon,
       );
       Analytics.log('profile_updated');
       ref.invalidate(myProfileProvider);
@@ -72,6 +75,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           if (!_prefilled) {
             _prefilled = true;
             _nameController.text = user.name;
+            _selectedIcon = user.iconUrl;
           }
           return _buildForm();
         },
@@ -98,6 +102,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Center(
+                  child: UserAvatar(
+                    name: _nameController.text,
+                    iconUrl: _selectedIcon,
+                    radius: 48,
+                  ),
+                ),
+                const SizedBox(height: 24),
                 TextFormField(
                   controller: _nameController,
                   enabled: !_isSaving,
@@ -105,11 +117,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     labelText: '名前',
                     border: OutlineInputBorder(),
                   ),
+                  onChanged: (_) => setState(() {}),
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? '名前を入力してください'
                       : null,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
+                const Text('アイコン', textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                AvatarPresetPicker(
+                  selected: _selectedIcon,
+                  enabled: !_isSaving,
+                  onSelected: (path) => setState(() => _selectedIcon = path),
+                ),
+                const SizedBox(height: 28),
                 FilledButton(
                   onPressed: _isSaving ? null : _save,
                   child: _isSaving

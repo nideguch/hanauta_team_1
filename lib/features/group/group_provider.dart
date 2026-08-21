@@ -20,6 +20,7 @@ class GroupPost {
     required this.videoUrl,
     required this.userName,
     required this.createdAt,
+    this.iconUrl,
     this.needsFlip = false,
     this.platform = 'mobile',
   });
@@ -29,6 +30,7 @@ class GroupPost {
   final String videoUrl;
   final String userName;
   final DateTime createdAt;
+  final String? iconUrl;
   // ファイル自体が上下逆に記録された動画(Android前面カメラ等)の補正フラグ。
   final bool needsFlip;
   final String platform;
@@ -259,7 +261,7 @@ class GroupService {
   Future<List<AppUser>> fetchMembers(String groupId) async {
     final rows = await supabase
         .from('group_members')
-        .select('users(id, name, created_at)')
+        .select('users(id, name, created_at, icon_url)')
         .eq('group_id', groupId)
         .order('joined_at');
     return rows
@@ -272,7 +274,7 @@ class GroupService {
     final rows = await supabase
         .from('post_shares')
         .select(
-            'created_at, posts!inner(id, user_id, video_url, needs_flip, platform, created_at, users(name))')
+            'created_at, posts!inner(id, user_id, video_url, needs_flip, platform, created_at, users(name, icon_url))')
         .eq('group_id', args.groupId)
         .eq('shared_date', args.sharedDate)
         .eq('shared_hour', args.hour)
@@ -287,6 +289,7 @@ class GroupService {
         videoUrl: post['video_url'] as String,
         userName: (user?['name'] as String?) ?? '名無し',
         createdAt: DateTime.parse(post['created_at'] as String),
+        iconUrl: user?['icon_url'] as String?,
         needsFlip: post['needs_flip'] as bool? ?? false,
         platform: post['platform'] as String? ?? 'mobile',
       );

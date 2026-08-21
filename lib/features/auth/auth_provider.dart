@@ -59,6 +59,9 @@ Future<bool> hasProfile(String userId) async {
 Future<void> createProfile({
   required String userId,
   required String name,
+  String? iconUrl,
 }) async {
-  await supabase.from('users').insert({'id': userId, 'name': name});
+  await supabase
+      .from('users')
+      .insert({'id': userId, 'name': name, 'icon_url': iconUrl});
 }

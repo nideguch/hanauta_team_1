@@ -16,18 +16,21 @@ final myProfileProvider = FutureProvider.autoDispose<AppUser>((ref) async {
 
   final row = await supabase
       .from('users')
-      .select('id, name, created_at')
+      .select('id, name, created_at, icon_url')
       .eq('id', user.id)
       .single();
 
   return AppUser.fromJson(row);
 });
 
-// プロフィール（名前）を users テーブルで更新する。id は Auth のユーザーID。
+// プロフィール（名前・アイコン）を users テーブルで更新する。id は Auth のユーザーID。
 // updated_at はDB側のトリガが自動更新するため、ここでは触らない。
 Future<void> updateProfileName({
   required String userId,
   required String name,
+  String? iconUrl,
 }) async {
-  await supabase.from('users').update({'name': name}).eq('id', userId);
+  await supabase
+      .from('users')
+      .update({'name': name, 'icon_url': iconUrl}).eq('id', userId);
 }

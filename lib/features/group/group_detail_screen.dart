@@ -12,25 +12,11 @@ import '../../core/cached_video.dart';
 import '../../core/jst.dart';
 import '../../models/app_user.dart';
 import '../../models/group.dart';
+import '../auth/avatar_presets.dart';
 import '../home/home_provider.dart';
 import '../post/recorded_video_view.dart';
 import 'group_provider.dart';
 import 'leave_confirm_dialog.dart';
-
-// メンバー頭文字アバターの色。
-const _avatarColors = [
-  Color(0xFF4FC3F7),
-  Color(0xFF81C784),
-  Color(0xFFFFB74D),
-  Color(0xFFBA68C8),
-  Color(0xFFE57373),
-  Color(0xFF4DB6AC),
-  Color(0xFF7986CB),
-  Color(0xFFF06292),
-];
-
-Color _colorFor(String key) =>
-    _avatarColors[key.hashCode.abs() % _avatarColors.length];
 
 class GroupDetailScreen extends ConsumerStatefulWidget {
   const GroupDetailScreen({super.key, required this.groupId});
@@ -298,29 +284,12 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   Widget _memberTile(AppUser member) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: _Avatar(name: member.name, radius: 18),
-      title: Text(member.name),
-    );
-  }
-}
-
-// メンバーの頭文字アバター。
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.name, this.radius = 16});
-
-  final String name;
-  final double radius;
-
-  @override
-  Widget build(BuildContext context) {
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: _colorFor(name),
-      foregroundColor: Colors.white,
-      child: Text(
-        name.isNotEmpty ? name[0] : '?',
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: radius * 0.8),
+      leading: UserAvatar(
+        name: member.name,
+        iconUrl: member.iconUrl,
+        radius: 18,
       ),
+      title: Text(member.name),
     );
   }
 }
@@ -412,7 +381,10 @@ class _MemberPostCardState extends State<_MemberPostCard> {
                 child: CircularProgressIndicator(color: Colors.white),
               ),
             ),
-          _NameOverlay(name: widget.post.userName),
+          _NameOverlay(
+            name: widget.post.userName,
+            iconUrl: widget.post.iconUrl,
+          ),
           _TimeOverlay(label: widget.slotLabel),
         ],
       ),
@@ -444,7 +416,11 @@ class _EmptyMemberCard extends StatelessWidget {
               ],
             ),
           ),
-          _NameOverlay(name: member.name, dark: false),
+          _NameOverlay(
+            name: member.name,
+            iconUrl: member.iconUrl,
+            dark: false,
+          ),
           _TimeOverlay(label: slotLabel, dark: false),
         ],
       ),
@@ -482,9 +458,10 @@ class _CardFrame extends StatelessWidget {
 
 // カード左上の投稿者名＋アバター。
 class _NameOverlay extends StatelessWidget {
-  const _NameOverlay({required this.name, this.dark = true});
+  const _NameOverlay({required this.name, this.iconUrl, this.dark = true});
 
   final String name;
+  final String? iconUrl;
   final bool dark;
 
   @override
@@ -494,7 +471,7 @@ class _NameOverlay extends StatelessWidget {
       top: 12,
       child: Row(
         children: [
-          _Avatar(name: name, radius: 14),
+          UserAvatar(name: name, iconUrl: iconUrl, radius: 14),
           const SizedBox(width: 8),
           Text(
             name,
