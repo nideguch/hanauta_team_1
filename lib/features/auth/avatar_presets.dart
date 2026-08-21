@@ -37,6 +37,10 @@ const _avatarColors = [
 Color avatarColorFor(String key) =>
     _avatarColors[key.hashCode.abs() % _avatarColors.length];
 
+// ガチャのPNGは背景が透明で横長のものもあるため、円に切り抜かず内側に収める。
+bool avatarFitsInside(String iconUrl) =>
+    iconUrl.startsWith('assets/avatars/gacha/');
+
 // icon_url の値から画像プロバイダを作る。プリセットはアセット、それ以外はURL扱い。
 ImageProvider? avatarImageProvider(String? iconUrl) {
   if (iconUrl == null || iconUrl.isEmpty) return null;
@@ -60,6 +64,9 @@ class UserAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final image = avatarImageProvider(iconUrl);
+    if (image != null && avatarFitsInside(iconUrl!)) {
+      return AvatarImageCircle(image: image, radius: radius);
+    }
     return CircleAvatar(
       radius: radius,
       backgroundColor: avatarColorFor(name),
@@ -78,17 +85,44 @@ class UserAvatar extends StatelessWidget {
   }
 }
 
+// 画像を丸く切り抜いて表示する円。透過画像は白背景の内側に収める。
+class AvatarImageCircle extends StatelessWidget {
+  const AvatarImageCircle({
+    super.key,
+    required this.image,
+    required this.radius,
+  });
+
+  final ImageProvider image;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipOval(
+      child: Container(
+        width: radius * 2,
+        height: radius * 2,
+        color: Colors.white,
+        padding: EdgeInsets.all(radius * 0.12),
+        child: Image(image: image, fit: BoxFit.contain),
+      ),
+    );
+  }
+}
+
 // プリセットアイコンの選択UI。選択中のアイコンに枠とチェックを付ける。
 class AvatarPresetPicker extends StatelessWidget {
   const AvatarPresetPicker({
     super.key,
     required this.selected,
     required this.onSelected,
+    this.presets = avatarPresets,
     this.enabled = true,
   });
 
   final String? selected;
   final ValueChanged<String> onSelected;
+  final List<AvatarPreset> presets;
   final bool enabled;
 
   @override
@@ -100,7 +134,7 @@ class AvatarPresetPicker extends StatelessWidget {
       spacing: 12,
       runSpacing: 12,
       children: [
-        for (final preset in avatarPresets)
+        for (final preset in presets)
           GestureDetector(
             onTap: enabled ? () => onSelected(preset.assetPath) : null,
             child: SizedBox(
@@ -120,10 +154,15 @@ class AvatarPresetPicker extends StatelessWidget {
                         width: 3,
                       ),
                     ),
-                    child: CircleAvatar(
-                      radius: 32,
-                      backgroundImage: AssetImage(preset.assetPath),
-                    ),
+                    child: avatarFitsInside(preset.assetPath)
+                        ? AvatarImageCircle(
+                            image: AssetImage(preset.assetPath),
+                            radius: 32,
+                          )
+                        : CircleAvatar(
+                            radius: 32,
+                            backgroundImage: AssetImage(preset.assetPath),
+                          ),
                   ),
                   const SizedBox(height: 6),
                   Text(

@@ -147,6 +147,14 @@ class HomeScreen extends ConsumerWidget {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.casino_outlined),
+              title: const Text('アイコンガチャ'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.push('/gacha');
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('ログアウト'),
               onTap: () {

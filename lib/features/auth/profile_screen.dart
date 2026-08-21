@@ -3,10 +3,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/analytics.dart';
 import '../../core/navigation.dart';
 import '../../core/supabase_client.dart';
+import '../gacha/gacha_provider.dart';
 import 'avatar_presets.dart';
 import 'profile_provider.dart';
 
@@ -62,6 +64,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  // ガチャで当てたアイコンも、ここから選べるようにする。
+  Widget _buildGachaIcons() {
+    final owned = ref.watch(gachaStateProvider).value?.ownedPaths ?? {};
+    final presets = [
+      for (final icon in gachaIcons)
+        if (owned.contains(icon.assetPath))
+          AvatarPreset(label: icon.label, assetPath: icon.assetPath),
+    ];
+
+    return Column(
+      children: [
+        const Text('ガチャで当てたアイコン', textAlign: TextAlign.center),
+        const SizedBox(height: 16),
+        if (presets.isEmpty)
+          Text(
+            'まだ1つも持っていません',
+            style: Theme.of(context).textTheme.bodySmall,
+          )
+        else
+          AvatarPresetPicker(
+            selected: _selectedIcon,
+            enabled: !_isSaving,
+            presets: presets,
+            onSelected: (path) => setState(() => _selectedIcon = path),
+          ),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          onPressed: _isSaving ? null : () => context.push('/gacha'),
+          icon: const Icon(Icons.casino_outlined),
+          label: const Text('ガチャを引く'),
+        ),
+      ],
+    );
   }
 
   @override
@@ -130,6 +167,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   enabled: !_isSaving,
                   onSelected: (path) => setState(() => _selectedIcon = path),
                 ),
+                const SizedBox(height: 28),
+                _buildGachaIcons(),
                 const SizedBox(height: 28),
                 FilledButton(
                   onPressed: _isSaving ? null : _save,

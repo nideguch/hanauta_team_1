@@ -34,3 +34,11 @@ Future<void> updateProfileName({
       .from('users')
       .update({'name': name, 'icon_url': iconUrl}).eq('id', userId);
 }
+
+// アイコンだけを更新する。ガチャで当たったアイコンの着せ替えに使う。
+Future<void> updateProfileIcon({
+  required String userId,
+  required String iconUrl,
+}) async {
+  await supabase.from('users').update({'icon_url': iconUrl}).eq('id', userId);
+}
