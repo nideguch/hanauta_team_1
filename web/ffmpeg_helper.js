@@ -58,7 +58,8 @@ async function _ensureLoaded() {
         _log(`進捗 ${(progress * 100).toFixed(1)}%  time=${time}`);
       });
 
-      const base = '/ffmpeg';
+      // GitHub Pages のサブパス配信でも正しく解決するため、document.baseURI を基準にする。
+      const base = new URL('ffmpeg', document.baseURI).href;
       _log('blob化開始', base);
       const coreURL = await _toBlobURL(`${base}/ffmpeg-core.js`, 'text/javascript');
       const wasmURL = await _toBlobURL(`${base}/ffmpeg-core.wasm`, 'application/wasm');
