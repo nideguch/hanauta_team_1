@@ -60,8 +60,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (ref.read(authControllerProvider).hasError) return;
 
     // メール確認は使わない設定なので、成功すれば即セッションが張られる。
-    // スプラッシュで「プロフィール未登録→/profile/setup / 登録済み→/home」を振り分ける。
-    context.go('/splash');
+    // オープニング（アプリの歴史）を流したあと、スプラッシュで
+    // 「プロフィール未登録→/profile/setup / 登録済み→/home」を振り分ける。
+    context.go('/history');
   }
 
   @override

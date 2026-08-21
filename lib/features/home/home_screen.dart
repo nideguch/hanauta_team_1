@@ -101,6 +101,14 @@ class HomeScreen extends ConsumerWidget {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.local_movies_outlined),
+              title: const Text('このアプリの歴史'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.push('/history');
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.casino_outlined),
               title: const Text('ランダム入室'),
               onTap: () {
@@ -144,6 +152,14 @@ class HomeScreen extends ConsumerWidget {
               onTap: () {
                 Navigator.of(sheetContext).pop();
                 context.push('/profile');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.local_movies_outlined),
+              title: const Text('このアプリの歴史'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.push('/history');
               },
             ),
             ListTile(
