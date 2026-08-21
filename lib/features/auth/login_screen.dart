@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import 'auth_errors.dart';
 import 'auth_provider.dart';
+import 'visit_counter_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -168,12 +169,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 }
 
 // ログイン画面上部のブランドヘッダー。アプリ名とひとことを表示する。
-class _LoginHeader extends StatelessWidget {
+class _LoginHeader extends ConsumerWidget {
   const _LoginHeader();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final visitCount = ref.watch(visitCounterProvider);
     return Column(
       children: [
         Icon(
@@ -193,6 +195,16 @@ class _LoginHeader extends StatelessWidget {
           'グループで動画を共有しよう',
           style: theme.textTheme.bodyMedium
               ?.copyWith(color: theme.colorScheme.outline),
+        ),
+        const SizedBox(height: 8),
+        visitCount.when(
+          data: (count) => Text(
+            'あなたは$count人目の訪問者です！',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.outline),
+          ),
+          loading: () => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
         ),
       ],
     );
