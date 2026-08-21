@@ -10,6 +10,7 @@ import '../../core/cached_video.dart';
 import '../../models/group.dart';
 import '../../models/post.dart';
 import '../auth/auth_provider.dart';
+import '../group/group_provider.dart';
 import '../post/recorded_video_view.dart';
 import 'home_provider.dart';
 
@@ -38,7 +39,7 @@ class HomeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 80),
                 children: [
                   _Header(
-                    onAddGroup: () => _showGroupMenu(context),
+                    onAddGroup: () => _showGroupMenu(context, ref),
                     onMore: () => _showMoreMenu(context, ref),
                   ),
                   const SizedBox(height: 8),
@@ -76,7 +77,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  void _showGroupMenu(BuildContext context) {
+  void _showGroupMenu(BuildContext context, WidgetRef ref) {
     showModalBottomSheet<void>(
       context: context,
       builder: (sheetContext) => SafeArea(
@@ -99,10 +100,35 @@ class HomeScreen extends ConsumerWidget {
                 context.push('/group/join');
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.casino_outlined),
+              title: const Text('ランダム入室'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _joinRandomGroup(context, ref);
+              },
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _joinRandomGroup(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final group = await ref.read(groupServiceProvider).joinRandomGroup();
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('「${group.name}」に入室しました')),
+      );
+      ref.invalidate(myGroupsProvider);
+      context.push('/group/${group.id}');
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('ランダム入室に失敗しました: $e')),
+      );
+    }
   }
 
   void _showMoreMenu(BuildContext context, WidgetRef ref) {

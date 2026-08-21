@@ -65,6 +65,10 @@ class GroupPostsArgs {
 // グループ関連のSupabase操作をまとめたサービス。
 class GroupService {
   static const _codeChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  // 運営の共有Supabaseに新しいカラムを追加できないため、
+  // ランダム部屋かどうかはグループ名の前方一致だけで判別する。
+  static const _randomRoomPrefix = 'ランダム部屋';
+  static const _randomRoomCapacity = 4;
 
   String get _currentUserId {
     final user = supabase.auth.currentUser;
@@ -145,6 +149,82 @@ class GroupService {
     // ⚠️ 計測用イベント。この行だけを削除しないこと（joinGroup機能ごと消すのはOK）
     Analytics.log('group_joined', {'group_id': group.id});
     return group;
+  }
+
+  // 空きのあるランダム部屋に参加する。無ければ新しい部屋を作って最初のメンバーになる。
+  Future<Group> joinRandomGroup() async {
+    final userId = _currentUserId;
+
+    final rows = await supabase
+        .from('groups')
+        .select()
+        .ilike('name', '$_randomRoomPrefix%')
+        .order('created_at');
+    final rooms = rows.map(Group.fromJson).toList();
+
+    final counts = <String, int>{};
+    final joinedRoomIds = <String>{};
+    if (rooms.isNotEmpty) {
+      final members = await supabase
+          .from('group_members')
+          .select('group_id, user_id')
+          .inFilter('group_id', rooms.map((room) => room.id).toList());
+      for (final member in members) {
+        final groupId = member['group_id'] as String;
+        counts[groupId] = (counts[groupId] ?? 0) + 1;
+        if (member['user_id'] == userId) {
+          joinedRoomIds.add(groupId);
+        }
+      }
+    }
+
+    Group? target;
+    var targetCount = -1;
+    var maxNumber = 0;
+    for (final room in rooms) {
+      maxNumber = max(maxNumber, _randomRoomNumber(room.name));
+      final count = counts[room.id] ?? 0;
+      if (joinedRoomIds.contains(room.id) || count >= _randomRoomCapacity) {
+        continue;
+      }
+      // 部屋を1つずつ埋めていくため、空きのある中で最も人数が多い部屋を選ぶ。
+      if (count > targetCount) {
+        target = room;
+        targetCount = count;
+      }
+    }
+
+    // 人数の確認と参加を1つのトランザクションにできないため、
+    // 複数人が同時に最後の枠へ入ると定員4人を超えることがある。
+    // ハッカソン用途では許容し、多少の超過はそのままにする。
+    if (target == null) {
+      final created =
+          await createGroup('$_randomRoomPrefix #${maxNumber + 1}');
+      Analytics.log('random_room_joined', {
+        'group_id': created.id,
+        'created_room': true,
+        'member_count': 1,
+      });
+      return created;
+    }
+
+    await supabase.from('group_members').insert({
+      'group_id': target.id,
+      'user_id': userId,
+    });
+    Analytics.log('random_room_joined', {
+      'group_id': target.id,
+      'created_room': false,
+      'member_count': targetCount + 1,
+    });
+    return target;
+  }
+
+  // 「ランダム部屋 #12」から番号12を取り出す。取れなければ0。
+  int _randomRoomNumber(String name) {
+    final match = RegExp(r'#\s*(\d+)').firstMatch(name);
+    if (match == null) return 0;
+    return int.tryParse(match.group(1)!) ?? 0;
   }
 
   // 参加中のグループから脱退する。自分の group_members の行を削除する。
