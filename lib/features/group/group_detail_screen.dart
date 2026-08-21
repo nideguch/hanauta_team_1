@@ -15,6 +15,7 @@ import '../../models/group.dart';
 import '../home/home_provider.dart';
 import '../post/recorded_video_view.dart';
 import 'group_provider.dart';
+import 'leave_confirm_dialog.dart';
 
 // メンバー頭文字アバターの色。
 const _avatarColors = [
@@ -267,26 +268,16 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     );
   }
 
-  // 脱退の確認ダイアログを出し、承諾されたら脱退してホームへ戻る。
+  // 10段階の引き止めダイアログを出し、すべて突破されたら脱退してホームへ戻る。
   Future<void> _confirmLeave() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('グループを脱退しますか？'),
-        content: const Text('脱退すると、このグループの投稿は見られなくなります。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('キャンセル'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('脱退する', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
+    final confirmed = await showLeaveGauntlet(context);
+    if (!mounted) return;
+    if (!confirmed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('よかった〜！ みんな喜んでるよ 🥰')),
+      );
+      return;
+    }
 
     try {
       await ref.read(groupServiceProvider).leaveGroup(widget.groupId);
